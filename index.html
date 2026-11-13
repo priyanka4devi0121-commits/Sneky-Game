@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Sneky 3D - Ultimate Sound Edition</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: sans-serif; user-select: none; }
+    body { background-color: #0b0b0b; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; overflow: hidden; }
+    
+    #app-container {
+      width: 100%; max-width: 380px; height: 680px; background: linear-gradient(180deg, #1a1a1a, #0f0f0f);
+      border-radius: 25px; position: relative; box-shadow: 0 15px 35px rgba(0,0,0,0.9);
+      display: flex; flex-direction: column; align-items: center; overflow: hidden; border: 3px solid #2ecc71;
+    }
+
+    #splash-screen {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+      display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 20;
+      animation: fadeOut 0.8s ease-in-out 2.5s forwards;
+    }
+    .splash-title { font-size: 28px; font-weight: bold; color: #2ecc71; text-shadow: 0 0 10px rgba(46,204,113,0.5); text-align: center; margin-bottom: 8px; }
+    .splash-dev { font-size: 13px; color: #bbb; letter-spacing: 1px; }
+    @keyframes fadeOut { to { opacity: 0; visibility: hidden; } }
+
+    .header-bar {
+      width: 100%; padding: 12px 18px; display: flex; justify-content: space-between; align-items: center;
+      background-color: #1f1f1f; border-bottom: 1px solid #333;
+    }
+    .icon-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
+
+    .screen { display: none; width: 100%; height: calc(100% - 50px); flex-direction: column; align-items: center; justify-content: center; padding: 15px; }
+    .active-screen { display: flex; }
+
+    #start-btn {
+      background: linear-gradient(135deg, #2ecc71, #27ae60); color: white; border: none; padding: 15px 40px;
+      font-size: 20px; font-weight: bold; border-radius: 30px; cursor: pointer;
+      box-shadow: 0 5px 20px rgba(46,204,113,0.5);
+    }
+
+    #game-canvas { background-color: #050505; border: 2px solid #2ecc71; border-radius: 12px; box-shadow: inset 0 0 15px rgba(0,0,0,0.8); }
+    .score-board { width: 100%; display: flex; justify-content: space-between; margin-bottom: 8px; font-weight: bold; font-size: 16px; padding: 0 5px; color: #2ecc71; }
+
+    .controls-container { margin-top: 15px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .middle-row { display: flex; gap: 40px; }
+    .arrow-btn {
+      width: 55px; height: 55px; background: linear-gradient(135deg, #2ecc71, #219653); border: none; color: white;
+      font-size: 22px; border-radius: 50%; cursor: pointer; display: flex; justify-content: center; align-items: center;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.4);
+    }
+    .arrow-btn:active { background: #1e8449; transform: scale(0.90); }
+
+    .modal {
+      display: none; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85); z-index: 15; flex-direction: column; justify-content: center; align-items: center; padding: 20px;
+    }
+    .modal-content { background-color: #222; border: 1px solid #444; padding: 20px; border-radius: 15px; width: 90%; max-width: 300px; display: flex; flex-direction: column; gap: 12px; }
+    .setting-row { display: flex; justify-content: space-between; align-items: center; font-size: 14px; }
+    input[type="text"], textarea { width: 100%; padding: 8px; border-radius: 6px; border: none; outline: none; color: #333; background: #ddd; }
+    .btn-small { background-color: #3498db; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    .btn-danger { background-color: #e74c3c; }
+    .game-over-title { color: #e74c3c; font-size: 30px; font-weight: bold; margin-bottom: 5px; text-shadow: 0 0 10px rgba(231,76,60,0.4); }
+  </style>
+</head>
+<body>
+
+<div id="app-container">
+  <!-- Splash Screen -->
+  <div id="splash-screen">
+    <div class="splash-title">Welcome to your Sneky</div>
+    <div class="splash-dev">Developer by Aashish Kumar</div>
+  </div>
+
+  <div class="header-bar">
+    <button class="icon-btn" id="open-settings">⚙️</button>
+    <div style="font-weight: bold; font-size: 16px; letter-spacing: 1px; color: #2ecc71;">SNEKY 3D</div>
+    <button class="icon-btn" id="open-notepad">📝</button>
+  </div>
+
+  <!-- Home Screen -->
+  <div id="home-screen" class="screen active-screen">
+    <button id="start-btn">Play for Fun</button>
+  </div>
+
+  <!-- Game Screen -->
+  <div id="game-screen" class="screen">
+    <div class="score-board">
+      <div>Score: <span id="current-score">0</span></div>
+      <div>High: <span id="high-score">0</span></div>
+    </div>
+    <canvas id="game-canvas" width="280" height="280"></canvas>
+    
+    <div class="controls-container">
+      <button class="arrow-btn" id="up-btn">⬆️</button>
+      <div class="middle-row">
+        <button class="arrow-btn" id="left-btn">⬅️</button>
+        <button class="arrow-btn" id="right-btn">➡️</button>
+      </div>
+      <button class="arrow-btn" id="down-btn">⬇️</button>
+    </div>
+  </div>
+
+  <!-- Game Over Screen -->
+  <div id="gameover-screen" class="screen">
+    <h1 class="game-over-title">Game Over</h1>
+    <p style="font-size: 16px; margin-bottom: 3px;">Score: <span id="final-score">0</span></p>
+    <p style="font-size: 16px; margin-bottom: 12px;">High Score: <span id="final-highscore">0</span></p>
+    
+    <div style="font-size: 13px; color: #2ecc71; margin-bottom: 15px; font-weight: bold;">Developer by Aashish Kumar</div>
+
+    <button class="btn-small" id="save-note-go-btn" style="margin-bottom: 10px; width: 100%;">Note Score</button>
+    <button id="replay-btn" class="btn-small" style="background: linear-gradient(135deg, #2ecc71, #27ae60); padding: 10px 25px; width: 100%;">Replay</button>
+  </div>
+
+  <!-- Settings Modal -->
+  <div id="settings-modal" class="modal">
+    <div class="modal-content">
+      <h3>Settings</h3>
+      <div class="setting-row">
+        <label>Volume</label>
+        <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.5">
+      </div>
+      <div class="setting-row">
+        <label>Brightness</label>
+        <input type="range" id="brightness-slider" min="0.3" max="1" step="0.1" value="1">
+      </div>
+      <div class="setting-row">
+        <label>Snake Speed</label>
+        <input type="range" id="speed-slider" min="100" max="400" step="20" value="200">
+      </div>
+      <button class="btn-small btn-danger" id="close-settings">Close</button>
+    </div>
+  </div>
+
+  <!-- Notepad Modal -->
+  <div id="notepad-modal" class="modal">
+    <div class="modal-content">
+      <h3>Notepad</h3>
+      <div id="input-fields-container">
+        <input type="text" id="note-name" placeholder="Enter Name (e.g. Aashish)">
+        <input type="text" id="note-score" readonly placeholder="Score">
+        <input type="text" id="note-date" readonly placeholder="Date & Time">
+        <button class="btn-small" id="save-note-btn" style="width: 100%; margin-top: 5px;">Save</button>
+      </div>
+      <textarea id="saved-notes" rows="4" readonly placeholder="Saved Notes..."></textarea>
+      <button class="btn-small btn-danger" id="close-notepad" style="width: 100%;">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  let audioCtx = null;
+  let bgMusicOsc = null;
+  let isMusicPlaying = false;
+
+  function getAudioContext() {
+    if (!audioCtx) {
+      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+    return audioCtx;
+  }
+
+  // ==================== 🎵 धांसू 8-बिट बैकग्राउंड म्यूजिक 🎵 ====================
+  function startBgMusic() {
+    try {
+      let ctx = getAudioContext();
+      if (ctx.state === 'suspended') ctx.resume();
+      if (isMusicPlaying) return;
+
+      // मुख्य धुन के 16 नोट्स
+      let melody = [
+        261.63, 329.63, 392.00, 523.25, 
+        440.00, 349.23, 392.00, 523.25,
+        329.63, 392.00, 440.00, 493.88,
+        523.25, 392.00, 329.63, 261.63
+      ];
+      
+      // बेस नोट्स
+      let bassline = [
+        130.81, 130.81, 174.61, 174.61,
+        196.00, 196.00, 130.81, 130.81
+      ];
+
+      let step = 0;
+      isMusicPlaying = true;
+      
+      bgMusicOsc = setInterval(() => {
+        let vol = document.getElementById('volume-slider').value;
+        if (vol > 0) {
+          // Melody Sound (Triangle Wave)
+          let osc = ctx.createOscillator();
+          let gain = ctx.createGain();
+          osc.type = 'triangle';
+          osc.frequency.value = melody[step % melody.length];
+          gain.gain.setValueAtTime(vol * 0.12, ctx.currentTime);
+          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+          osc.connect(gain);
+          gain.connect(ctx.destination);
+          osc.start();
+          osc.stop(ctx.currentTime + 0.15);
+
+          // Bass Sound (Square Wave)
+          let bassOsc = ctx.createOscillator();
+          let bassGain = ctx.createGain();
+          bassOsc.type = 'square';
+          bassOsc.frequency.value = bassline[step % bassline.length];
+          bassGain.gain.setValueAtTime(vol * 0.08, ctx.currentTime);
+          bassGain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
+          bassOsc.connect(bassGain);
+          bassGain.connect(ctx.destination);
+          bassOsc.start();
+          bassOsc.stop(ctx.currentTime + 0.18);
+        }
+        step++;
+      }, 180);
+    } catch(e) {}
+  }
+
+  function stopBgMusic() {
+    if (bgMusicOsc) clearInterval(bgMusicOsc);
+    isMusicPlaying = false;
+  }
+
+  function playEatSound() {
+    try {
+      let ctx = getAudioContext();
+      let osc = ctx.createOscillator();
+      let gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(900, ctx.currentTime + 0.1);
+      let vol = document.getElementById('volume-slider').value;
+      gain.gain.setValueAtTime(vol * 0.3, ctx.currentTime);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    } catch(e) {}
+  }
+
+  function playOuch() {
+    try {
+      let ctx = getAudioContext();
+      let osc = ctx.createOscillator();
+      let gain = ctx.createGain();
+      osc.type = 'sawtooth';
+      let now = ctx.currentTime;
+      osc.frequency.setValueAtTime(400, now);
+      osc.frequency.exponentialRampToValueAtTime(100, now + 0.3);
+      let vol = document.getElementById('volume-slider').value;
+      gain.gain.setValueAtTime(vol * 0.4, now);
+      gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } catch(e) {}
+  }
+
+  const homeScreen = document.getElementById('home-screen');
+  const gameScreen = document.getElementById('game-screen');
+  const gameoverScreen = document.getElementById('gameover-screen');
+  
+  document.getElementById('start-btn').onclick = () => { showScreen(gameScreen); startGame(); };
+  document.getElementById('replay-btn').onclick = () => { showScreen(gameScreen); startGame(); };
+
+  function showScreen(screen) {
+    homeScreen.classList.remove('active-screen');
+    gameScreen.classList.remove('active-screen');
+    gameoverScreen.classList.remove('active-screen');
+    screen.classList.add('active-screen');
+  }
+
+  // Modals
+  document.getElementById('open-settings').onclick = () => document.getElementById('settings-modal').style.display = 'flex';
+  document.getElementById('close-settings').onclick = () => document.getElementById('settings-modal').style.display = 'none';
+
+  document.getElementById('open-notepad').onclick = () => {
+    document.getElementById('input-fields-container').style.display = 'none';
+    document.getElementById('notepad-modal').style.display = 'flex';
+  };
+
+  document.getElementById('close-notepad').onclick = () => document.getElementById('notepad-modal').style.display = 'none';
+
+  document.getElementById('save-note-go-btn').onclick = () => {
+    document.getElementById('input-fields-container').style.display = 'block';
+    document.getElementById('note-score').value = `Score: ${score}`;
+    let now = new Date();
+    let dateTimeStr = now.toLocaleDateString() + ' ' + now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+    document.getElementById('note-date').value = dateTimeStr;
+    document.getElementById('notepad-modal').style.display = 'flex';
+  };
+
+  document.getElementById('brightness-slider').oninput = (e) => {
+    document.getElementById('app-container').style.filter = `brightness(${e.target.value})`;
+  };
+
+  let gameSpeed = 200;
+  document.getElementById('speed-slider').oninput = (e) => {
+    gameSpeed = parseInt(e.target.value);
+    if(gameInterval) { clearInterval(gameInterval); gameInterval = setInterval(gameLoop, gameSpeed); }
+  };
+
+  // Notepad Save
+  document.getElementById('save-note-btn').onclick = () => {
+    const name = document.getElementById('note-name').value.trim() || 'Aashish';
+    const sc = document.getElementById('note-score').value;
+    const dt = document.getElementById('note-date').value;
+    const existing = localStorage.getItem('sneky_notes') || '';
+    localStorage.setItem('sneky_notes', `👤 ${name} | ${sc} | 🕒 ${dt}\n-----------------------------\n` + existing);
+    loadNotes();
+    document.getElementById('note-name').value = '';
+    document.getElementById('notepad-modal').style.display = 'none';
+  };
+  function loadNotes() {
+    document.getElementById('saved-notes').value = localStorage.getItem('sneky_notes') || 'No saved notes yet.';
+  }
+  loadNotes();
+
+  // Game Core
+  const canvas = document.getElementById('game-canvas');
+  const ctx = canvas.getContext('2d');
+  const gridSize = 14;
+  const tileCount = canvas.width / gridSize;
+  
+  let snake = [];
+  let food = { x: 5, y: 5 };
+  let dx = gridSize, dy = 0;
+  let score = 0;
+  let highScore = localStorage.getItem('sneky_highscore') || 0;
+  let gameInterval = null;
+  document.getElementById('high-score').innerText = highScore;
+
+  function startGame() {
+    snake = [{ x: 140, y: 140 }, { x: 126, y: 140 }];
+    dx = gridSize; dy = 0; score = 0;
+    document.getElementById('current-score').innerText = score;
+    spawnFood();
+    startBgMusic();
+    if (gameInterval) clearInterval(gameInterval);
+    gameInterval = setInterval(gameLoop, gameSpeed);
+  }
+
+  function gameLoop() {
+    let head = { x: snake[0].x + dx, y: snake[0].y + dy };
+    if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height) return gameOver();
+    for (let i = 0; i < snake.length; i++) {
+      if (head.x === snake[i].x && head.y === snake[i].y) return gameOver();
+    }
+    snake.unshift(head);
+    if (head.x === food.x && head.y === food.y) {
+      score += 10;
+      document.getElementById('current-score').innerText = score;
+      playEatSound();
+      spawnFood();
+    } else {
+      snake.pop();
+    }
+    draw();
+  }
+
+  function spawnFood() {
+    food.x = Math.floor(Math.random() * tileCount) * gridSize;
+    food.y = Math.floor(Math.random() * tileCount) * gridSize;
+  }
+
+  function draw() {
+    ctx.fillStyle = '#050505';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    
+    // 3D Apple
+    let fx = food.x + gridSize / 2;
+    let fy = food.y + gridSize / 2;
+    let radius = gridSize / 2 - 2;
+
+    let appleGrad = ctx.createRadialGradient(fx - 2, fy - 2, 2, fx, fy, radius);
+    appleGrad.addColorStop(0, '#ff6b6b');
+    appleGrad.addColorStop(1, '#c0392b');
+    ctx.fillStyle = appleGrad;
+    ctx.beginPath();
+    ctx.arc(fx, fy, radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#27ae60';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(fx, fy - radius + 2);
+    ctx.lineTo(fx + 2, fy - radius - 3);
+    ctx.stroke();
+
+    // 3D Snake
+    snake.forEach((part, index) => {
+      let px = part.x + gridSize / 2;
+      let py = part.y + gridSize / 2;
+      let pRadius = gridSize / 2 - 1;
+
+      let snakeGrad = ctx.createRadialGradient(px - 2, py - 2, 2, px, py, pRadius);
+      if (index === 0) {
+        snakeGrad.addColorStop(0, '#58d68d');
+        snakeGrad.addColorStop(1, '#1e8449');
+      } else {
+        snakeGrad.addColorStop(0, '#2ecc71');
+        snakeGrad.addColorStop(1, '#117a65');
+      }
+
+      ctx.fillStyle = snakeGrad;
+      ctx.beginPath();
+      ctx.arc(px, py, pRadius, 0, Math.PI * 2);
+      ctx.fill();
+    });
+  }
+
+  function gameOver() {
+    clearInterval(gameInterval);
+    stopBgMusic();
+    playOuch();
+    if (score > highScore) {
+      highScore = score;
+      localStorage.setItem('sneky_highscore', highScore);
+    }
+    document.getElementById('high-score').innerText = highScore;
+    document.getElementById('final-score').innerText = score;
+    document.getElementById('final-highscore').innerText = highScore;
+    showScreen(gameoverScreen);
+  }
+
+  document.getElementById('up-btn').onclick = () => { if (dy === 0) { dx = 0; dy = -gridSize; } };
+  document.getElementById('down-btn').onclick = () => { if (dy === 0) { dx = 0; dy = gridSize; } };
+  document.getElementById('left-btn').onclick = () => { if (dx === 0) { dx = -gridSize; dy = 0; } };
+  document.getElementById('right-btn').onclick = () => { if (dx === 0) { dx = gridSize; dy = 0; } };
+</script>
+</body>
+</html>
